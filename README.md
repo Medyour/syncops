@@ -2,7 +2,7 @@
 
 SyncOps est une démonstration publique de traitement fiable de webhooks. Le projet rend visibles les sujets souvent cachés derrière une intégration robuste : signature HMAC, idempotence, file d'attente, reprises, mise en quarantaine et observabilité.
 
-> État : socle Laravel initial. Les parcours métier décrits ci-dessous seront livrés progressivement par petites PR vérifiables.
+> État : réception signée, idempotence, traitement asynchrone, reprises bornées, quarantaine, relance manuelle et première interface d’observabilité disponibles.
 
 ## MVP prévu
 
@@ -12,6 +12,7 @@ SyncOps est une démonstration publique de traitement fiable de webhooks. Le pro
 - traiter les événements en arrière-plan ;
 - appliquer des reprises avec temporisation ;
 - placer les échecs définitifs en quarantaine ;
+- afficher un tableau de bord et un journal d’événements filtrable ;
 - afficher l'historique complet d'un événement ;
 - permettre une relance manuelle simulée.
 
@@ -22,7 +23,7 @@ Les connecteurs et destinations du MVP sont entièrement simulés dans l'applica
 - PHP 8.3 et Laravel 13 ;
 - PostgreSQL 18 pour la cible de production ;
 - file Laravel avec pilote base de données ;
-- Blade, Vue 3 ciblé, Tailwind CSS 4 et Vite 8 ;
+- Blade, Tailwind CSS 4 et Vite 8 ;
 - PHPUnit 12, Laravel Pint et GitHub Actions.
 
 ## Démarrage local
@@ -34,12 +35,13 @@ composer install
 cp .env.example .env
 php artisan key:generate
 php artisan migrate
+php artisan db:seed
 npm ci
 npm run build
 php artisan serve
 ```
 
-Le point de santé répond sans contenu sur `GET /health`.
+Le tableau de bord est disponible sur `GET /`, le journal filtrable sur `GET /events` et le point de santé répond sans contenu sur `GET /health`.
 
 ## Vérifications
 
