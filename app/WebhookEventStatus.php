@@ -14,4 +14,20 @@ enum WebhookEventStatus: string
     case RetryScheduled = 'retry_scheduled';
     case DeadLettered = 'dead_lettered';
     case Replayed = 'replayed';
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::Received => 'Reçu',
+            self::Verified => 'Vérifié',
+            self::Queued => 'En attente',
+            self::Processing => 'En traitement',
+            self::Succeeded => 'Réussi',
+            self::Rejected => 'Rejeté',
+            self::Duplicate => 'Doublon',
+            self::RetryScheduled => 'Nouvelle tentative',
+            self::DeadLettered => 'En quarantaine',
+            self::Replayed => 'Relancé',
+        };
+    }
 }

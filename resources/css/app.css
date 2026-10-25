@@ -6,4 +6,17 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+    --color-ink-900: #111b24;
+    --color-ink-950: #091118;
+}
+
+@layer base {
+    ::selection {
+        background: color-mix(in oklab, var(--color-teal-300) 28%, transparent);
+        color: white;
+    }
+
+    body {
+        background-color: var(--color-ink-950);
+    }
 }
