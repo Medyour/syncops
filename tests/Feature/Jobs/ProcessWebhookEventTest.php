@@ -90,15 +90,15 @@ class ProcessWebhookEventTest extends TestCase
             ],
             $event->statusChanges()->oldest('id')->pluck('to_status')->all(),
         );
-        $this->assertDatabaseHas('webhook_event_status_changes', [
-            'webhook_event_id' => $event->id,
-            'to_status' => WebhookEventStatus::RetryScheduled->value,
-            'context' => json_encode([
+        $this->assertStatusChangeContext(
+            $event,
+            WebhookEventStatus::RetryScheduled,
+            [
                 'attempt_number' => 1,
                 'reason_code' => 'simulated_temporary_failure',
                 'retry_delay_seconds' => 5,
-            ], JSON_THROW_ON_ERROR),
-        ]);
+            ],
+        );
     }
 
     public function test_permanent_failure_is_dead_lettered_without_retry(): void
@@ -178,15 +178,15 @@ class ProcessWebhookEventTest extends TestCase
 
         $this->assertSame(WebhookEventStatus::DeadLettered, $event->refresh()->status);
         $this->assertDatabaseCount('webhook_event_attempts', 3);
-        $this->assertDatabaseHas('webhook_event_status_changes', [
-            'webhook_event_id' => $event->id,
-            'from_status' => WebhookEventStatus::Processing->value,
-            'to_status' => WebhookEventStatus::DeadLettered->value,
-            'context' => json_encode([
+        $this->assertStatusChangeContext(
+            $event,
+            WebhookEventStatus::DeadLettered,
+            [
                 'attempt_number' => 3,
                 'reason_code' => 'retry_limit_reached',
-            ], JSON_THROW_ON_ERROR),
-        ]);
+            ],
+            WebhookEventStatus::Processing,
+        );
     }
 
     public function test_unexpected_terminal_failure_is_recorded_by_failure_callback(): void
@@ -199,15 +199,15 @@ class ProcessWebhookEventTest extends TestCase
         (new ProcessWebhookEvent($event->id))->failed($exception);
 
         $this->assertSame(WebhookEventStatus::DeadLettered, $event->refresh()->status);
-        $this->assertDatabaseHas('webhook_event_status_changes', [
-            'webhook_event_id' => $event->id,
-            'from_status' => WebhookEventStatus::Processing->value,
-            'to_status' => WebhookEventStatus::DeadLettered->value,
-            'context' => json_encode([
+        $this->assertStatusChangeContext(
+            $event,
+            WebhookEventStatus::DeadLettered,
+            [
                 'attempt_number' => 0,
                 'reason_code' => 'processing_failed',
-            ], JSON_THROW_ON_ERROR),
-        ]);
+            ],
+            WebhookEventStatus::Processing,
+        );
     }
 
     public function test_terminal_event_is_not_processed_again(): void
@@ -234,5 +234,22 @@ class ProcessWebhookEventTest extends TestCase
         $this->assertSame('01K8E9G7A63P43SHRZW38C6ZMQ:replay:0', $job->uniqueId());
         $this->assertSame('01K8E9G7A63P43SHRZW38C6ZMQ:replay:2', $replayJob->uniqueId());
         $this->assertSame('webhooks', $job->queue);
+    }
+
+    /** @param array<string, int|string> $expectedContext */
+    private function assertStatusChangeContext(
+        WebhookEvent $event,
+        WebhookEventStatus $toStatus,
+        array $expectedContext,
+        ?WebhookEventStatus $fromStatus = null,
+    ): void {
+        $query = $event->statusChanges()
+            ->where('to_status', $toStatus->value);
+
+        if ($fromStatus !== null) {
+            $query->where('from_status', $fromStatus->value);
+        }
+
+        $this->assertSame($expectedContext, $query->firstOrFail()->context);
     }
 }

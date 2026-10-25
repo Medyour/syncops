@@ -3,6 +3,7 @@
     "name": "syncops",
     "private": true,
     "type": "module",
+    "packageManager": "npm@11.17.0",
     "scripts": {
         "build": "vite build",
         "dev": "vite"

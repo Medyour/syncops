@@ -17,9 +17,36 @@ concurrency:
 
 jobs:
   quality:
-    name: Quality checks
+    name: PHP 8.3 · ${{ matrix.database }} · Node 24
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        database:
+          - SQLite
+          - PostgreSQL 18
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: syncops
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DB_CONNECTION: ${{ matrix.database == 'PostgreSQL 18' && 'pgsql' || 'sqlite' }}
+      DB_DATABASE: ${{ matrix.database == 'PostgreSQL 18' && 'syncops' || ':memory:' }}
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
 
     steps:
       - name: Check out repository
@@ -76,3 +103,18 @@ jobs:
 
       - name: Run Laravel tests
         run: php artisan test --compact
+
+  production-image:
+    name: Production image
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Validate deployment shell scripts
+        run: bash -n .do/*.sh
+
+      - name: Build production image
+        run: docker build --file .do/Dockerfile --tag syncops:ci .

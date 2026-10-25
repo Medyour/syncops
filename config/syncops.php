@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'demo_mode' => (bool) env('SYNCOPS_DEMO_MODE', false),
+
     'webhooks' => [
         'max_payload_bytes' => (int) env('SYNCOPS_WEBHOOK_MAX_PAYLOAD_BYTES', 65536),
         'rate_limit_per_minute' => (int) env('SYNCOPS_WEBHOOK_RATE_LIMIT_PER_MINUTE', 60),

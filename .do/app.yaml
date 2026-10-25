@@ -1,0 +1,165 @@
+# Add APP_KEY and the three SYNCOPS_*_DEMO_SECRET values manually to the web
+# component only, as encrypted SECRET variables with RUN_TIME scope.
+# Select the existing default-lon1 VPC manually after importing this portable spec.
+# Add a starter-domain redirect only after DigitalOcean assigns its exact hostname.
+name: syncops
+region: lon
+domains:
+    - domain: syncops.mkirchel.com
+      type: PRIMARY
+alerts:
+    - rule: DEPLOYMENT_FAILED
+    - rule: DOMAIN_FAILED
+envs:
+    - key: APP_NAME
+      value: 'SyncOps'
+      scope: RUN_TIME
+      type: GENERAL
+    - key: APP_ENV
+      value: 'production'
+      scope: RUN_TIME
+      type: GENERAL
+    - key: APP_DEBUG
+      value: 'false'
+      scope: RUN_TIME
+      type: GENERAL
+    - key: SYNCOPS_DEMO_MODE
+      value: 'true'
+      scope: RUN_TIME
+      type: GENERAL
+    - key: APP_URL
+      value: '${APP_URL}'
+      scope: RUN_TIME
+      type: GENERAL
+    - key: APP_LOCALE
+      value: 'fr'
+      scope: RUN_TIME
+      type: GENERAL
+    - key: APP_FALLBACK_LOCALE
+      value: 'fr'
+      scope: RUN_TIME
+      type: GENERAL
+    - key: DB_CONNECTION
+      value: 'pgsql'
+      scope: RUN_TIME
+      type: GENERAL
+    - key: DATABASE_URL
+      value: '${syncops-db.DATABASE_PRIVATE_URL}'
+      scope: RUN_TIME
+      type: SECRET
+    - key: CACHE_STORE
+      value: 'database'
+      scope: RUN_TIME
+      type: GENERAL
+    - key: SESSION_DRIVER
+      value: 'database'
+      scope: RUN_TIME
+      type: GENERAL
+    - key: SESSION_ENCRYPT
+      value: 'true'
+      scope: RUN_TIME
+      type: GENERAL
+    - key: SESSION_SECURE_COOKIE
+      value: 'true'
+      scope: RUN_TIME
+      type: GENERAL
+    - key: SESSION_HTTP_ONLY
+      value: 'true'
+      scope: RUN_TIME
+      type: GENERAL
+    - key: SESSION_SAME_SITE
+      value: 'lax'
+      scope: RUN_TIME
+      type: GENERAL
+    - key: QUEUE_CONNECTION
+      value: 'database'
+      scope: RUN_TIME
+      type: GENERAL
+    - key: DB_QUEUE
+      value: 'webhooks'
+      scope: RUN_TIME
+      type: GENERAL
+    - key: DB_QUEUE_RETRY_AFTER
+      value: '90'
+      scope: RUN_TIME
+      type: GENERAL
+    - key: LOG_CHANNEL
+      value: 'stderr'
+      scope: RUN_TIME
+      type: GENERAL
+    - key: LOG_LEVEL
+      value: 'warning'
+      scope: RUN_TIME
+      type: GENERAL
+    - key: MAIL_MAILER
+      value: 'array'
+      scope: RUN_TIME
+      type: GENERAL
+services:
+    - name: web
+      github:
+          repo: Medyour/syncops
+          branch: main
+          deploy_on_push: false
+      dockerfile_path: .do/Dockerfile
+      source_dir: /
+      instance_count: 1
+      instance_size_slug: apps-s-1vcpu-0.5gb
+      run_command: sh .do/start-web.sh
+      http_port: 8080
+      health_check:
+          http_path: /health
+          initial_delay_seconds: 10
+          period_seconds: 10
+          timeout_seconds: 3
+          success_threshold: 1
+          failure_threshold: 3
+workers:
+    - name: webhook-worker
+      github:
+          repo: Medyour/syncops
+          branch: main
+          deploy_on_push: false
+      dockerfile_path: .do/Dockerfile
+      source_dir: /
+      instance_count: 1
+      instance_size_slug: apps-s-1vcpu-0.5gb
+      run_command: sh .do/start-worker.sh
+jobs:
+    - name: prepare-demo
+      github:
+          repo: Medyour/syncops
+          branch: main
+          deploy_on_push: false
+      dockerfile_path: .do/Dockerfile
+      source_dir: /
+      instance_count: 1
+      instance_size_slug: apps-s-1vcpu-0.5gb
+      kind: PRE_DEPLOY
+      run_command: sh .do/pre-deploy.sh
+    - name: reset-demo
+      github:
+          repo: Medyour/syncops
+          branch: main
+          deploy_on_push: false
+      dockerfile_path: .do/Dockerfile
+      source_dir: /
+      instance_count: 1
+      instance_size_slug: apps-s-1vcpu-0.5gb
+      kind: SCHEDULED
+      schedule:
+          cron: '0 4 * * *'
+          time_zone: Europe/Paris
+      run_command: sh .do/reset-demo.sh
+databases:
+    - name: syncops-db
+      engine: PG
+      version: '18'
+      production: false
+ingress:
+    rules:
+        - component:
+              name: web
+          match:
+              path:
+                  prefix: /
