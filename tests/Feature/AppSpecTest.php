@@ -54,11 +54,25 @@ class AppSpecTest extends TestCase
         $this->assertSame(['cron' => '0 4 * * *', 'time_zone' => 'Europe/Paris'], $jobs['reset-demo']['schedule']);
         $this->assertSame('sh .do/reset-demo.sh', $jobs['reset-demo']['run_command']);
         $this->assertSame([
-            'rules' => [[
-                'component' => ['name' => 'web'],
-                'match' => ['path' => ['prefix' => '/']],
-            ]],
+            'rules' => [
+                [
+                    'match' => [
+                        'authority' => ['exact' => 'syncops-znptj.ondigitalocean.app'],
+                        'path' => ['prefix' => '/'],
+                    ],
+                    'redirect' => [
+                        'authority' => 'syncops.mkirchel.com',
+                        'scheme' => 'https',
+                        'redirect_code' => 301,
+                    ],
+                ],
+                [
+                    'component' => ['name' => 'web'],
+                    'match' => ['path' => ['prefix' => '/']],
+                ],
+            ],
         ], $spec['ingress']);
+        $this->assertArrayNotHasKey('uri', $spec['ingress']['rules'][0]['redirect']);
     }
 
     public function test_runtime_variables_are_exact_bindings_without_committed_credentials(): void

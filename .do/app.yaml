@@ -1,7 +1,7 @@
 # Add APP_KEY and the three SYNCOPS_*_DEMO_SECRET values manually to the web
 # component only, as encrypted SECRET variables with RUN_TIME scope.
 # Select the existing default-lon1 VPC manually after importing this portable spec.
-# Add a starter-domain redirect only after DigitalOcean assigns its exact hostname.
+# The exact starter-domain redirect preserves the original path and query string.
 name: syncops
 region: lon
 domains:
@@ -158,6 +158,15 @@ databases:
       production: false
 ingress:
     rules:
+        - match:
+              authority:
+                  exact: syncops-znptj.ondigitalocean.app
+              path:
+                  prefix: /
+          redirect:
+              authority: syncops.mkirchel.com
+              scheme: https
+              redirect_code: 301
         - component:
               name: web
           match:

@@ -68,6 +68,6 @@ Le socle minimal revient à 17 USD/mois : 5 USD pour le web, 5 USD pour le worke
 4. vérifier le coût, le domaine `syncops.mkirchel.com`, PostgreSQL 18 et les quatre composants avant de créer l'application ;
 5. dans Cloudflare, ajouter le CNAME `syncops` vers le domaine de démarrage DigitalOcean en mode DNS only ;
 6. attendre que le domaine soit actif, puis vérifier HTTPS, `/health`, le tableau de bord et le traitement par le worker ;
-7. ajouter ensuite une redirection HTTPS 301 limitée au domaine de démarrage exact, sans URI de destination, afin de préserver le chemin et la chaîne de requête.
+7. conserver la redirection HTTPS 301 limitée à `syncops-znptj.ondigitalocean.app`, sans URI de destination, afin de préserver le chemin et la chaîne de requête.
 
 Le job de préparation valide la configuration, applique les migrations, restaure la démonstration et revérifie les compteurs. Le web et le worker refusent de démarrer si la configuration ou les données attendues sont incomplètes. Les erreurs ne réimpriment jamais l'URL privée de connexion.
