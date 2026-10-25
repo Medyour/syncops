@@ -20,7 +20,7 @@ flowchart LR
     X --> T
 ```
 
-## Composants prévus
+## Composants
 
 ### Application web
 
@@ -32,7 +32,7 @@ Un processus distinct consomme la file Laravel. Il applique une politique de rep
 
 ### Planificateur
 
-Le planificateur entretient les données fictives et pourra réinitialiser périodiquement la démonstration. Toute tâche planifiée devra empêcher les exécutions concurrentes.
+Un job App Platform réinitialise les données fictives chaque jour à 04:00, heure de Paris. Le reset verrouille les tables sur PostgreSQL et refuse toute base contenant un compte ou un connecteur hors du périmètre de démonstration.
 
 ### PostgreSQL
 
@@ -52,8 +52,22 @@ Chaque événement possède un identifiant de corrélation. Les journaux structu
 
 Les indicateurs initiaux seront le volume reçu, le taux de succès, le nombre de doublons, les reprises planifiées, la durée de traitement et la taille de la quarantaine.
 
-## Déploiement envisagé
+## Déploiement DigitalOcean
 
-La cible sera DigitalOcean App Platform avec trois processus distincts : service web, worker et job planifié. PostgreSQL 18 sera attaché par URL privée. L'auto-déploiement restera désactivé afin qu'une fusion GitHub ne déclenche pas automatiquement une mise en production.
+Le fichier `.do/app.yaml` définit quatre composants App Platform : service web, worker, job de préparation avant déploiement et job planifié. PostgreSQL 18 est attaché via `${syncops-db.DATABASE_PRIVATE_URL}`. L'auto-déploiement reste désactivé afin qu'une fusion GitHub ne déclenche pas automatiquement une mise en production.
 
-Ce dépôt ne crée encore aucune ressource cloud et n'engage aucun coût.
+Le VPC `default-lon1` est sélectionné manuellement pour garder son UUID hors du dépôt et placer l'application et la base dans le même réseau privé. Les quatre secrets de runtime restent eux aussi hors App Spec : la clé Laravel et les trois secrets HMAC sont ajoutés uniquement au composant web.
+
+Le socle minimal revient à 17 USD/mois : 5 USD pour le web, 5 USD pour le worker et 7 USD pour la base de développement, auxquels s'ajoute le temps d'exécution des deux jobs. Le dépôt ne crée lui-même aucune ressource et n'engage aucun coût tant que le spec n'est pas importé.
+
+### Procédure contrôlée
+
+1. importer `.do/app.yaml` depuis la branche `main` et laisser l'auto-déploiement désactivé ;
+2. sélectionner manuellement le VPC `default-lon1` pour les quatre composants et la base ;
+3. ajouter au seul composant web les quatre secrets chiffrés avec portée d'exécution ;
+4. vérifier le coût, le domaine `syncops.mkirchel.com`, PostgreSQL 18 et les quatre composants avant de créer l'application ;
+5. dans Cloudflare, ajouter le CNAME `syncops` vers le domaine de démarrage DigitalOcean en mode DNS only ;
+6. attendre que le domaine soit actif, puis vérifier HTTPS, `/health`, le tableau de bord et le traitement par le worker ;
+7. ajouter ensuite une redirection HTTPS 301 limitée au domaine de démarrage exact, sans URI de destination, afin de préserver le chemin et la chaîne de requête.
+
+Le job de préparation valide la configuration, applique les migrations, restaure la démonstration et revérifie les compteurs. Le web et le worker refusent de démarrer si la configuration ou les données attendues sont incomplètes. Les erreurs ne réimpriment jamais l'URL privée de connexion.

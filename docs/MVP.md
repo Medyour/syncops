@@ -74,11 +74,11 @@ Chaque changement d'état doit produire une entrée horodatée dans la chronolog
 
 ## Phases de réalisation
 
-1. socle, qualité et documentation ;
-2. modèle de données et données fictives ;
-3. réception, signature et idempotence ;
-4. file, traitement et reprises ;
-5. quarantaine et relance ;
-6. interface d'observabilité ;
-7. durcissement sécurité et accessibilité ;
-8. configuration de déploiement et intégration au portfolio.
+1. ✅ socle, qualité et documentation ;
+2. ✅ modèle de données et données fictives ;
+3. ✅ réception, signature et idempotence ;
+4. ✅ file, traitement et reprises ;
+5. ✅ quarantaine et relance ;
+6. ✅ interface d'observabilité ;
+7. ✅ durcissement sécurité et accessibilité ;
+8. 🟡 configuration de déploiement prête, création cloud et intégration au portfolio à effectuer après fusion.

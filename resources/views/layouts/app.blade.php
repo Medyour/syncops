@@ -11,6 +11,9 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="min-h-screen bg-ink-950 text-slate-100 antialiased">
+        <a href="#main-content" class="sr-only z-50 rounded-lg bg-white px-4 py-3 font-semibold text-ink-950 focus:not-sr-only focus:fixed focus:top-4 focus:left-4">
+            Aller au contenu principal
+        </a>
         <div class="pointer-events-none fixed inset-x-0 top-0 -z-10 h-96 bg-[radial-gradient(circle_at_top_left,rgba(45,212,191,0.12),transparent_38%),radial-gradient(circle_at_top_right,rgba(56,189,248,0.08),transparent_34%)]"></div>
 
         <header class="border-b border-white/8 bg-ink-950/85 backdrop-blur-xl">
@@ -89,7 +92,7 @@
             </div>
         </header>
 
-        <main class="mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 sm:py-14">
+        <main id="main-content" tabindex="-1" class="mx-auto w-full max-w-7xl px-5 py-10 outline-none sm:px-8 sm:py-14">
             @yield('content')
         </main>
 
