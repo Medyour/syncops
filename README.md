@@ -2,7 +2,7 @@
 
 SyncOps est une démonstration publique de traitement fiable de webhooks. Le projet rend visibles les sujets souvent cachés derrière une intégration robuste : signature HMAC, idempotence, file d'attente, reprises, mise en quarantaine et observabilité.
 
-> État : réception signée, idempotence, traitement asynchrone, reprises bornées, quarantaine, relance manuelle et première interface d’observabilité disponibles.
+> État : réception signée, idempotence, traitement asynchrone, reprises bornées, quarantaine, relance manuelle et interface d’observabilité détaillée disponibles.
 
 ## MVP prévu
 
@@ -13,8 +13,8 @@ SyncOps est une démonstration publique de traitement fiable de webhooks. Le pro
 - appliquer des reprises avec temporisation ;
 - placer les échecs définitifs en quarantaine ;
 - afficher un tableau de bord et un journal d’événements filtrable ;
-- afficher l'historique complet d'un événement ;
-- permettre une relance manuelle simulée.
+- afficher l'historique complet, les tentatives et une charge utile expurgée ;
+- permettre une relance manuelle simulée depuis la quarantaine.
 
 Les connecteurs et destinations du MVP sont entièrement simulés dans l'application. SyncOps n'acceptera pas d'URL arbitraire et n'enverra aucune donnée vers un service tiers.
 

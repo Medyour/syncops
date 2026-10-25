@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ListWebhookEventsRequest;
 use App\Models\Connector;
 use App\Models\WebhookEvent;
+use App\Services\PayloadRedactor;
 use App\WebhookEventStatus;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -60,6 +61,24 @@ class WebhookEventController extends Controller
                 ->get(),
             'statuses' => WebhookEventStatus::cases(),
             'filters' => $filters,
+        ]);
+    }
+
+    public function show(WebhookEvent $webhookEvent, PayloadRedactor $payloadRedactor): View
+    {
+        $webhookEvent->load([
+            'connector:id,slug,name,description',
+            'statusChanges' => fn ($query) => $query
+                ->orderBy('recorded_at')
+                ->orderBy('id'),
+            'attempts' => fn ($query) => $query
+                ->orderBy('attempt_number')
+                ->orderBy('id'),
+        ]);
+
+        return view('events.show', [
+            'event' => $webhookEvent,
+            'payloadJson' => $payloadRedactor->toPrettyJson($webhookEvent->payload),
         ]);
     }
 }
