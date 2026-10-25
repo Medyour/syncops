@@ -81,4 +81,4 @@ Chaque changement d'état doit produire une entrée horodatée dans la chronolog
 5. ✅ quarantaine et relance ;
 6. ✅ interface d'observabilité ;
 7. ✅ durcissement sécurité et accessibilité ;
-8. 🟡 configuration de déploiement prête, création cloud et intégration au portfolio à effectuer après fusion.
+8. 🟡 application cloud en ligne ; redirection du domaine de démarrage et intégration au portfolio à finaliser.

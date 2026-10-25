@@ -65,7 +65,7 @@ Le fichier [`.do/app.yaml`](.do/app.yaml) décrit une application App Platform �
 
 Le socle coûte donc 17 USD/mois, hors temps d'exécution très court des jobs. L'auto-déploiement est désactivé. Avant la création, il faut sélectionner manuellement le VPC `default-lon1`. Après l'import du spec, ajouter uniquement au composant `web`, avec portée `RUN_TIME` et type chiffré `SECRET` : `APP_KEY`, `SYNCOPS_BILLING_DEMO_SECRET`, `SYNCOPS_COMMERCE_DEMO_SECRET` et `SYNCOPS_CRM_DEMO_SECRET`.
 
-Le domaine prévu est `syncops.mkirchel.com`. Le CNAME Cloudflare doit rester en mode **DNS only**. La redirection du domaine de démarrage DigitalOcean ne doit être ajoutée qu'après création, lorsque son nom exact est connu, afin de conserver le chemin et la chaîne de requête d'origine.
+Le domaine principal est `syncops.mkirchel.com`. Le CNAME Cloudflare reste en mode **DNS only**. Le domaine de démarrage exact `syncops-znptj.ondigitalocean.app` est limité par une redirection HTTPS 301 qui conserve le chemin et la chaîne de requête d'origine.
 
 ## Documentation
 
