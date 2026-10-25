@@ -29,11 +29,11 @@
                     </span>
                 </a>
 
-                <nav class="flex items-center gap-1 rounded-xl border border-white/8 bg-white/3 p-1" aria-label="Navigation principale">
+                <nav class="flex w-full max-w-full items-center gap-1 overflow-x-auto rounded-xl border border-white/8 bg-white/3 p-1 lg:w-auto" aria-label="Navigation principale">
                     <a
                         href="{{ route('dashboard') }}"
                         @class([
-                            'rounded-lg px-4 py-2 text-sm font-medium transition',
+                            'shrink-0 rounded-lg px-4 py-2 text-sm font-medium whitespace-nowrap transition',
                             'bg-white/10 text-white shadow-sm' => request()->routeIs('dashboard'),
                             'text-slate-400 hover:bg-white/5 hover:text-white' => ! request()->routeIs('dashboard'),
                         ])
@@ -44,13 +44,46 @@
                     <a
                         href="{{ route('events.index') }}"
                         @class([
-                            'rounded-lg px-4 py-2 text-sm font-medium transition',
+                            'shrink-0 rounded-lg px-4 py-2 text-sm font-medium whitespace-nowrap transition',
                             'bg-white/10 text-white shadow-sm' => request()->routeIs('events.*'),
                             'text-slate-400 hover:bg-white/5 hover:text-white' => ! request()->routeIs('events.*'),
                         ])
                         @if (request()->routeIs('events.*')) aria-current="page" @endif
                     >
                         Événements
+                    </a>
+                    <a
+                        href="{{ route('quarantine.index') }}"
+                        @class([
+                            'shrink-0 rounded-lg px-4 py-2 text-sm font-medium whitespace-nowrap transition',
+                            'bg-white/10 text-white shadow-sm' => request()->routeIs('quarantine.*'),
+                            'text-slate-400 hover:bg-white/5 hover:text-white' => ! request()->routeIs('quarantine.*'),
+                        ])
+                        @if (request()->routeIs('quarantine.*')) aria-current="page" @endif
+                    >
+                        Quarantaine
+                    </a>
+                    <a
+                        href="{{ route('connectors.index') }}"
+                        @class([
+                            'shrink-0 rounded-lg px-4 py-2 text-sm font-medium whitespace-nowrap transition',
+                            'bg-white/10 text-white shadow-sm' => request()->routeIs('connectors.*'),
+                            'text-slate-400 hover:bg-white/5 hover:text-white' => ! request()->routeIs('connectors.*'),
+                        ])
+                        @if (request()->routeIs('connectors.*')) aria-current="page" @endif
+                    >
+                        Connecteurs
+                    </a>
+                    <a
+                        href="{{ route('architecture') }}"
+                        @class([
+                            'shrink-0 rounded-lg px-4 py-2 text-sm font-medium whitespace-nowrap transition',
+                            'bg-white/10 text-white shadow-sm' => request()->routeIs('architecture'),
+                            'text-slate-400 hover:bg-white/5 hover:text-white' => ! request()->routeIs('architecture'),
+                        ])
+                        @if (request()->routeIs('architecture')) aria-current="page" @endif
+                    >
+                        Architecture
                     </a>
                 </nav>
             </div>

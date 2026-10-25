@@ -2,7 +2,7 @@
 
 SyncOps est une démonstration publique de traitement fiable de webhooks. Le projet rend visibles les sujets souvent cachés derrière une intégration robuste : signature HMAC, idempotence, file d'attente, reprises, mise en quarantaine et observabilité.
 
-> État : réception signée, idempotence, traitement asynchrone, reprises bornées, quarantaine, relance manuelle et interface d’observabilité détaillée disponibles.
+> État : réception signée, idempotence, traitement asynchrone, reprises bornées, quarantaine, relance manuelle et interface d’observabilité complète disponibles.
 
 ## MVP prévu
 
@@ -14,7 +14,8 @@ SyncOps est une démonstration publique de traitement fiable de webhooks. Le pro
 - placer les échecs définitifs en quarantaine ;
 - afficher un tableau de bord et un journal d’événements filtrable ;
 - afficher l'historique complet, les tentatives et une charge utile expurgée ;
-- permettre une relance manuelle simulée depuis la quarantaine.
+- permettre une relance manuelle simulée depuis la quarantaine ;
+- présenter les connecteurs et le pipeline technique dans des vues dédiées.
 
 Les connecteurs et destinations du MVP sont entièrement simulés dans l'application. SyncOps n'acceptera pas d'URL arbitraire et n'enverra aucune donnée vers un service tiers.
 
@@ -41,7 +42,7 @@ npm run build
 php artisan serve
 ```
 
-Le tableau de bord est disponible sur `GET /`, le journal filtrable sur `GET /events` et le point de santé répond sans contenu sur `GET /health`.
+Le tableau de bord est disponible sur `GET /`, le journal filtrable sur `GET /events`, la quarantaine sur `GET /quarantine`, les connecteurs sur `GET /connectors`, l’explication du pipeline sur `GET /architecture` et le point de santé répond sans contenu sur `GET /health`.
 
 ## Vérifications
 
