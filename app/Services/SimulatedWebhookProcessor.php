@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\WebhookEvent;
+use App\WebhookEventStatus;
 use App\WebhookProcessingOutcome;
 
 class SimulatedWebhookProcessor
@@ -18,6 +19,20 @@ class SimulatedWebhookProcessor
 
         if (is_array($permanentFailureEventTypes)
             && in_array($event->event_type, $permanentFailureEventTypes, true)) {
+            $recoverableAfterReplayEventTypes = config(
+                'syncops.processing.recoverable_after_replay_event_types',
+                [],
+            );
+            $isRecoverableReplay = is_array($recoverableAfterReplayEventTypes)
+                && in_array($event->event_type, $recoverableAfterReplayEventTypes, true)
+                && $event->statusChanges()
+                    ->where('to_status', WebhookEventStatus::Replayed->value)
+                    ->exists();
+
+            if ($isRecoverableReplay) {
+                return WebhookProcessingOutcome::Succeeded;
+            }
+
             return WebhookProcessingOutcome::PermanentFailure;
         }
 

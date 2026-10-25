@@ -125,6 +125,31 @@ class ProcessWebhookEventTest extends TestCase
         $this->assertDatabaseCount('webhook_event_attempts', 1);
     }
 
+    public function test_replayed_recoverable_event_succeeds(): void
+    {
+        $event = WebhookEvent::factory()->create([
+            'event_type' => 'contact.synced',
+            'status' => WebhookEventStatus::Queued,
+        ]);
+        $event->statusChanges()->create([
+            'from_status' => WebhookEventStatus::DeadLettered,
+            'to_status' => WebhookEventStatus::Replayed,
+            'context' => [
+                'replay_number' => 1,
+                'reason_code' => 'manual_demo_replay',
+            ],
+            'recorded_at' => now(),
+        ]);
+
+        (new ProcessWebhookEvent($event->id))->handle(new SimulatedWebhookProcessor);
+
+        $this->assertSame(WebhookEventStatus::Succeeded, $event->refresh()->status);
+        $this->assertDatabaseHas('webhook_event_attempts', [
+            'webhook_event_id' => $event->id,
+            'outcome' => WebhookEventAttemptOutcome::Succeeded->value,
+        ]);
+    }
+
     public function test_final_temporary_failure_is_dead_lettered_without_another_retry(): void
     {
         config([
@@ -199,13 +224,15 @@ class ProcessWebhookEventTest extends TestCase
     public function test_job_has_bounded_retry_and_uniqueness_policy(): void
     {
         $job = new ProcessWebhookEvent('01K8E9G7A63P43SHRZW38C6ZMQ');
+        $replayJob = new ProcessWebhookEvent('01K8E9G7A63P43SHRZW38C6ZMQ', 2);
 
         $this->assertSame(3, $job->tries);
         $this->assertSame(30, $job->timeout);
         $this->assertTrue($job->failOnTimeout);
         $this->assertSame(300, $job->uniqueFor);
         $this->assertSame([5, 30], $job->backoff());
-        $this->assertSame('01K8E9G7A63P43SHRZW38C6ZMQ', $job->uniqueId());
+        $this->assertSame('01K8E9G7A63P43SHRZW38C6ZMQ:replay:0', $job->uniqueId());
+        $this->assertSame('01K8E9G7A63P43SHRZW38C6ZMQ:replay:2', $replayJob->uniqueId());
         $this->assertSame('webhooks', $job->queue);
     }
 }

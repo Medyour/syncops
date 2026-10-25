@@ -22,8 +22,8 @@ class DemoDataSeederTest extends TestCase
         $this->assertDatabaseHas('connectors', ['slug' => 'commerce-demo']);
         $this->assertDatabaseHas('connectors', ['slug' => 'crm-demo']);
         $this->assertDatabaseCount('webhook_events', 6);
-        $this->assertDatabaseCount('webhook_event_status_changes', 28);
-        $this->assertDatabaseCount('webhook_event_attempts', 5);
+        $this->assertDatabaseCount('webhook_event_status_changes', 31);
+        $this->assertDatabaseCount('webhook_event_attempts', 6);
         $this->assertDatabaseCount('users', 0);
 
         foreach ([
@@ -32,10 +32,13 @@ class DemoDataSeederTest extends TestCase
             WebhookEventStatus::Rejected,
             WebhookEventStatus::RetryScheduled,
             WebhookEventStatus::DeadLettered,
-            WebhookEventStatus::Replayed,
         ] as $status) {
             $this->assertDatabaseHas('webhook_events', ['status' => $status->value]);
         }
+
+        $this->assertDatabaseHas('webhook_event_status_changes', [
+            'to_status' => WebhookEventStatus::Replayed->value,
+        ]);
     }
 
     public function test_seeded_events_have_ulid_correlation_ids_and_complete_timelines(): void
