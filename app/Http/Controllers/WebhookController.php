@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ReceiveWebhookRequest;
+use App\Jobs\ProcessWebhookEvent;
 use App\Models\Connector;
 use App\Models\WebhookEvent;
 use App\WebhookEventStatus;
@@ -80,7 +81,7 @@ class WebhookController extends Controller
                 ],
                 [
                     'event_type' => $validated['event_type'],
-                    'status' => WebhookEventStatus::Verified,
+                    'status' => WebhookEventStatus::Queued,
                     'payload' => $payload,
                     'received_at' => $receivedAt,
                 ],
@@ -101,7 +102,14 @@ class WebhookController extends Controller
                     'to_status' => WebhookEventStatus::Verified,
                     'recorded_at' => $receivedAt,
                 ],
+                [
+                    'from_status' => WebhookEventStatus::Verified,
+                    'to_status' => WebhookEventStatus::Queued,
+                    'recorded_at' => $receivedAt,
+                ],
             ]);
+
+            ProcessWebhookEvent::dispatch($event->id)->afterCommit();
 
             return [$event, false];
         });

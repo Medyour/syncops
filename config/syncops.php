@@ -6,6 +6,15 @@ return [
         'rate_limit_per_minute' => (int) env('SYNCOPS_WEBHOOK_RATE_LIMIT_PER_MINUTE', 60),
     ],
 
+    'processing' => [
+        'temporary_failures_before_success' => [
+            'invoice.payment_delayed' => 1,
+        ],
+        'permanent_failure_event_types' => [
+            'fulfillment.failed',
+        ],
+    ],
+
     'connectors' => [
         'billing-demo' => [
             'secret' => env('SYNCOPS_BILLING_DEMO_SECRET'),

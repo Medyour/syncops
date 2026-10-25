@@ -37,6 +37,11 @@ class WebhookEvent extends Model
         return $this->hasMany(WebhookEventStatusChange::class);
     }
 
+    public function attempts(): HasMany
+    {
+        return $this->hasMany(WebhookEventAttempt::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *
