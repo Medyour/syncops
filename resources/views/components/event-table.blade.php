@@ -16,7 +16,9 @@
                 @forelse ($events as $event)
                     <tr class="transition hover:bg-white/3">
                         <td class="px-5 py-4">
-                            <p class="font-medium text-slate-100">{{ $event->event_type }}</p>
+                            <a href="{{ route('events.show', $event) }}" class="font-medium text-slate-100 transition hover:text-teal-200">
+                                {{ $event->event_type }}
+                            </a>
                             <p class="mt-1 max-w-72 truncate font-mono text-xs text-slate-500" title="{{ $event->source_event_id }}">
                                 {{ $event->source_event_id }}
                             </p>

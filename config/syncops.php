@@ -23,6 +23,25 @@ return [
         'rate_limit_per_minute' => (int) env('SYNCOPS_REPLAY_RATE_LIMIT_PER_MINUTE', 5),
     ],
 
+    'display' => [
+        'redacted_payload_keys' => [
+            'authorization',
+            'password',
+            'secret',
+            'token',
+            'api_key',
+            'access_token',
+            'refresh_token',
+            'email',
+            'phone',
+            'phone_number',
+            'address',
+            'first_name',
+            'last_name',
+            'full_name',
+        ],
+    ],
+
     'connectors' => [
         'billing-demo' => [
             'secret' => env('SYNCOPS_BILLING_DEMO_SECRET'),

@@ -11,6 +11,9 @@ Route::get('/', DashboardController::class)->name('dashboard');
 Route::get('/events', [WebhookEventController::class, 'index'])
     ->name('events.index');
 
+Route::get('/events/{webhookEvent}', [WebhookEventController::class, 'show'])
+    ->name('events.show');
+
 Route::get('/health', static fn (): Response => response()->noContent())
     ->name('health');
 

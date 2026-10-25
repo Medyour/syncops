@@ -133,4 +133,34 @@ class WebhookEventReplayControllerTest extends TestCase
         $this->assertSame(WebhookEventStatus::DeadLettered, $events[2]->refresh()->status);
         Queue::assertPushedTimes(ProcessWebhookEvent::class, 2);
     }
+
+    public function test_browser_replay_redirects_to_detail_with_success_message(): void
+    {
+        $event = WebhookEvent::factory()->deadLettered()->create();
+        Queue::fake([ProcessWebhookEvent::class]);
+
+        $response = $this->post(route('events.replays.store', $event));
+
+        $response
+            ->assertRedirect(route('events.show', $event))
+            ->assertSessionHas('success', 'La relance a été acceptée et placée dans la file.');
+        $this->assertSame(WebhookEventStatus::Queued, $event->refresh()->status);
+        $this->assertDatabaseCount('webhook_event_status_changes', 2);
+        Queue::assertPushedTimes(ProcessWebhookEvent::class, 1);
+    }
+
+    public function test_browser_replay_of_non_quarantined_event_redirects_with_error(): void
+    {
+        $event = WebhookEvent::factory()->succeeded()->create();
+        Queue::fake([ProcessWebhookEvent::class]);
+
+        $response = $this->post(route('events.replays.store', $event));
+
+        $response
+            ->assertRedirect(route('events.show', $event))
+            ->assertSessionHas('error', 'Cet événement ne peut plus être relancé.');
+        $this->assertSame(WebhookEventStatus::Succeeded, $event->refresh()->status);
+        $this->assertDatabaseCount('webhook_event_status_changes', 0);
+        Queue::assertNothingPushed();
+    }
 }

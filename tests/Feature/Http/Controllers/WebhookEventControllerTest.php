@@ -4,6 +4,8 @@ namespace Tests\Feature\Http\Controllers;
 
 use App\Models\Connector;
 use App\Models\WebhookEvent;
+use App\Models\WebhookEventAttempt;
+use App\Models\WebhookEventStatusChange;
 use App\WebhookEventStatus;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Tests\TestCase;
@@ -130,5 +132,109 @@ class WebhookEventControllerTest extends TestCase
             ->assertOk()
             ->assertDontSee('invoice.paid')
             ->assertSee('Aucun événement ne correspond à ces filtres.');
+    }
+
+    public function test_event_detail_displays_timeline_and_attempts_in_order(): void
+    {
+        $this->travelTo('2026-10-25 18:00:00');
+        $connector = Connector::factory()->create([
+            'slug' => 'commerce-demo',
+            'name' => 'Commerce Demo',
+        ]);
+        $event = WebhookEvent::factory()->for($connector)->deadLettered()->create([
+            'source_event_id' => 'commerce-event-2002',
+            'event_type' => 'fulfillment.failed',
+            'received_at' => now()->subMinutes(5),
+        ]);
+        WebhookEventStatusChange::factory()->for($event)->transition(
+            WebhookEventStatus::Processing,
+            WebhookEventStatus::RetryScheduled,
+        )->create([
+            'context' => ['reason_code' => 'first-timeline-step'],
+            'recorded_at' => now()->subMinutes(3),
+        ]);
+        WebhookEventStatusChange::factory()->for($event)->transition(
+            WebhookEventStatus::Processing,
+            WebhookEventStatus::DeadLettered,
+        )->create([
+            'context' => ['reason_code' => 'second-timeline-step'],
+            'recorded_at' => now()->subMinute(),
+        ]);
+        WebhookEventAttempt::factory()->for($event)->permanentFailure()->create([
+            'attempt_number' => 2,
+            'error_code' => 'second-attempt',
+        ]);
+        WebhookEventAttempt::factory()->for($event)->temporaryFailure()->create([
+            'attempt_number' => 1,
+            'error_code' => 'first-attempt',
+        ]);
+
+        $response = $this->get(route('events.show', $event));
+
+        $response
+            ->assertOk()
+            ->assertViewIs('events.show')
+            ->assertSee('fulfillment.failed')
+            ->assertSee('commerce-event-2002')
+            ->assertSeeInOrder(['first-timeline-step', 'second-timeline-step'])
+            ->assertSeeInOrder(['first-attempt', 'second-attempt']);
+    }
+
+    public function test_event_detail_recursively_redacts_sensitive_payload_and_escapes_content(): void
+    {
+        $event = WebhookEvent::factory()->create([
+            'payload' => [
+                'API-Key' => 'api-secret-value',
+                'profile' => [
+                    'Email' => 'person@example.test',
+                    'phoneNumber' => '+33 1 23 45 67 89',
+                    'note' => "<script>alert('xss')</script>",
+                ],
+            ],
+        ]);
+
+        $response = $this->get(route('events.show', $event));
+
+        $response
+            ->assertOk()
+            ->assertSee('[masqué]')
+            ->assertSee('&lt;script&gt;', false)
+            ->assertDontSee('api-secret-value')
+            ->assertDontSee('person@example.test')
+            ->assertDontSee('+33 1 23 45 67 89')
+            ->assertDontSee("<script>alert('xss')</script>", false);
+    }
+
+    public function test_dead_lettered_event_detail_displays_csrf_protected_replay_form(): void
+    {
+        $event = WebhookEvent::factory()->deadLettered()->create();
+
+        $response = $this->get(route('events.show', $event));
+
+        $response
+            ->assertOk()
+            ->assertSee('Relancer l’événement')
+            ->assertSee(route('events.replays.store', $event), false)
+            ->assertSee('name="_token"', false);
+    }
+
+    public function test_succeeded_event_detail_does_not_display_replay_form(): void
+    {
+        $event = WebhookEvent::factory()->succeeded()->create();
+
+        $response = $this->get(route('events.show', $event));
+
+        $response
+            ->assertOk()
+            ->assertDontSee('Relancer l’événement');
+    }
+
+    public function test_unknown_event_detail_returns_404(): void
+    {
+        $response = $this->get(route('events.show', [
+            'webhookEvent' => '01K8E9G7A63P43SHRZW38C6ZMQ',
+        ]));
+
+        $response->assertNotFound();
     }
 }
