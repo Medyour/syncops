@@ -12,7 +12,15 @@ return [
         ],
         'permanent_failure_event_types' => [
             'fulfillment.failed',
+            'contact.synced',
         ],
+        'recoverable_after_replay_event_types' => [
+            'contact.synced',
+        ],
+    ],
+
+    'replays' => [
+        'rate_limit_per_minute' => (int) env('SYNCOPS_REPLAY_RATE_LIMIT_PER_MINUTE', 5),
     ],
 
     'connectors' => [

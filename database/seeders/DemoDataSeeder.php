@@ -224,8 +224,11 @@ class DemoDataSeeder extends Seeder
                     WebhookEventStatus::Verified,
                     WebhookEventStatus::Queued,
                     WebhookEventStatus::Processing,
-                    WebhookEventStatus::Succeeded,
+                    WebhookEventStatus::DeadLettered,
                     WebhookEventStatus::Replayed,
+                    WebhookEventStatus::Queued,
+                    WebhookEventStatus::Processing,
+                    WebhookEventStatus::Succeeded,
                 ],
             ],
         ];

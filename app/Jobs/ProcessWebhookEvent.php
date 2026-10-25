@@ -28,8 +28,13 @@ class ProcessWebhookEvent implements ShouldBeUnique, ShouldQueue
 
     public int $uniqueFor = 300;
 
-    public function __construct(public string $webhookEventId)
-    {
+    public int $replayNumber = 0;
+
+    public function __construct(
+        public string $webhookEventId,
+        int $replayNumber = 0,
+    ) {
+        $this->replayNumber = $replayNumber;
         $this->onQueue('webhooks');
     }
 
@@ -41,7 +46,7 @@ class ProcessWebhookEvent implements ShouldBeUnique, ShouldQueue
 
     public function uniqueId(): string
     {
-        return $this->webhookEventId;
+        return $this->webhookEventId.':replay:'.$this->replayNumber;
     }
 
     public function handle(SimulatedWebhookProcessor $processor): void

@@ -40,5 +40,10 @@ class AppServiceProvider extends ServiceProvider
                 (int) config('syncops.webhooks.rate_limit_per_minute'),
             ))->by($connectorSlug.'|'.$request->ip());
         });
+
+        RateLimiter::for('replays', fn (Request $request): Limit => Limit::perMinute(max(
+            1,
+            (int) config('syncops.replays.rate_limit_per_minute'),
+        ))->by($request->ip()));
     }
 }
