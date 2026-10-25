@@ -23,6 +23,7 @@ class DemoDataSeederTest extends TestCase
         $this->assertDatabaseHas('connectors', ['slug' => 'crm-demo']);
         $this->assertDatabaseCount('webhook_events', 6);
         $this->assertDatabaseCount('webhook_event_status_changes', 28);
+        $this->assertDatabaseCount('webhook_event_attempts', 5);
         $this->assertDatabaseCount('users', 0);
 
         foreach ([
@@ -42,9 +43,12 @@ class DemoDataSeederTest extends TestCase
         $this->seed();
 
         $events = WebhookEvent::query()
-            ->with(['statusChanges' => fn ($query) => $query
-                ->orderBy('recorded_at')
-                ->orderBy('id')])
+            ->with([
+                'attempts' => fn ($query) => $query->orderBy('attempt_number'),
+                'statusChanges' => fn ($query) => $query
+                    ->orderBy('recorded_at')
+                    ->orderBy('id'),
+            ])
             ->get();
 
         foreach ($events as $event) {
@@ -57,6 +61,12 @@ class DemoDataSeederTest extends TestCase
             $this->assertSame(
                 $event->status,
                 $event->statusChanges->last()->to_status,
+            );
+            $this->assertSame(
+                $event->statusChanges
+                    ->where('to_status', WebhookEventStatus::Processing)
+                    ->count(),
+                $event->attempts->count(),
             );
         }
     }

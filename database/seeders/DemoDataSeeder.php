@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Connector;
 use App\Models\WebhookEvent;
+use App\WebhookEventAttemptOutcome;
 use App\WebhookEventStatus;
 use Illuminate\Database\Seeder;
 
@@ -46,6 +47,7 @@ class DemoDataSeeder extends Seeder
                 ],
             );
 
+            $event->attempts()->delete();
             $event->statusChanges()->delete();
 
             foreach ($eventData['history'] as $statusIndex => $status) {
@@ -54,6 +56,37 @@ class DemoDataSeeder extends Seeder
                     'to_status' => $status,
                     'context' => $this->timelineContext($status),
                     'recorded_at' => $recordedAt->copy()->addSeconds($statusIndex),
+                ]);
+            }
+
+            $attemptNumber = 0;
+
+            foreach ($eventData['history'] as $statusIndex => $status) {
+                if ($status !== WebhookEventStatus::Processing) {
+                    continue;
+                }
+
+                $attemptNumber++;
+                $nextStatus = $eventData['history'][$statusIndex + 1] ?? null;
+                $outcome = match ($nextStatus) {
+                    WebhookEventStatus::Succeeded => WebhookEventAttemptOutcome::Succeeded,
+                    WebhookEventStatus::RetryScheduled => WebhookEventAttemptOutcome::TemporaryFailure,
+                    WebhookEventStatus::DeadLettered => WebhookEventAttemptOutcome::PermanentFailure,
+                    default => WebhookEventAttemptOutcome::Processing,
+                };
+
+                $event->attempts()->create([
+                    'attempt_number' => $attemptNumber,
+                    'outcome' => $outcome,
+                    'error_code' => match ($outcome) {
+                        WebhookEventAttemptOutcome::TemporaryFailure => 'simulated_temporary_failure',
+                        WebhookEventAttemptOutcome::PermanentFailure => 'simulated_permanent_failure',
+                        default => null,
+                    },
+                    'started_at' => $recordedAt->copy()->addSeconds($statusIndex),
+                    'finished_at' => $outcome === WebhookEventAttemptOutcome::Processing
+                        ? null
+                        : $recordedAt->copy()->addSeconds($statusIndex + 1),
                 ]);
             }
         }

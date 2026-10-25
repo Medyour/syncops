@@ -2,10 +2,12 @@
 
 namespace Tests\Feature\Http\Controllers;
 
+use App\Jobs\ProcessWebhookEvent;
 use App\Models\Connector;
 use App\Models\WebhookEvent;
 use App\WebhookEventStatus;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -29,17 +31,18 @@ class WebhookControllerTest extends TestCase
         ]);
     }
 
-    public function test_valid_signed_request_creates_verified_event_and_returns_202(): void
+    public function test_valid_signed_request_queues_event_and_returns_202(): void
     {
         $this->travelTo('2026-10-25 12:00:00');
         $connector = Connector::factory()->create(['slug' => 'billing-demo']);
+        Queue::fake([ProcessWebhookEvent::class]);
         $payload = '{"invoice_id":"invoice_demo_4001","amount_minor":12900}';
 
         $response = $this->postWebhook($connector, $payload, 'billing-event-4001');
 
         $response
             ->assertAccepted()
-            ->assertJsonPath('data.status', WebhookEventStatus::Verified->value)
+            ->assertJsonPath('data.status', WebhookEventStatus::Queued->value)
             ->assertJsonPath('data.duplicate', false)
             ->assertJsonCount(3, 'data');
         $this->assertTrue(Str::isUlid($response->json('data.id')));
@@ -47,7 +50,7 @@ class WebhookControllerTest extends TestCase
             'connector_id' => $connector->id,
             'source_event_id' => 'billing-event-4001',
             'event_type' => 'invoice.paid',
-            'status' => WebhookEventStatus::Verified->value,
+            'status' => WebhookEventStatus::Queued->value,
             'received_at' => '2026-10-25 12:00:00',
         ]);
 
@@ -58,8 +61,17 @@ class WebhookControllerTest extends TestCase
             $event->payload,
         );
         $this->assertSame(
-            [WebhookEventStatus::Received, WebhookEventStatus::Verified],
+            [
+                WebhookEventStatus::Received,
+                WebhookEventStatus::Verified,
+                WebhookEventStatus::Queued,
+            ],
             $event->statusChanges()->oldest('id')->pluck('to_status')->all(),
+        );
+        Queue::assertPushedOn(
+            'webhooks',
+            ProcessWebhookEvent::class,
+            fn (ProcessWebhookEvent $job): bool => $job->webhookEventId === $event->id,
         );
     }
 
@@ -67,6 +79,7 @@ class WebhookControllerTest extends TestCase
     public function test_invalid_signature_returns_401_and_stores_nothing(?string $signature): void
     {
         $connector = Connector::factory()->create(['slug' => 'billing-demo']);
+        Queue::fake([ProcessWebhookEvent::class]);
         $payload = '{"invoice_id":"invoice_demo_4002"}';
 
         $response = $this->postWebhook(
@@ -86,6 +99,7 @@ class WebhookControllerTest extends TestCase
             ]);
         $this->assertDatabaseCount('webhook_events', 0);
         $this->assertDatabaseCount('webhook_event_status_changes', 0);
+        Queue::assertNothingPushed();
     }
 
     /**
@@ -250,6 +264,7 @@ class WebhookControllerTest extends TestCase
     public function test_repeated_event_returns_200_without_second_effect(): void
     {
         $connector = Connector::factory()->create(['slug' => 'billing-demo']);
+        Queue::fake([ProcessWebhookEvent::class]);
         $payload = '{"invoice_id":"invoice_demo_4011"}';
         $firstResponse = $this->postWebhook($connector, $payload, 'billing-event-4011');
 
@@ -261,14 +276,16 @@ class WebhookControllerTest extends TestCase
             ->assertJsonPath('data.status', WebhookEventStatus::Duplicate->value)
             ->assertJsonPath('data.duplicate', true);
         $this->assertDatabaseCount('webhook_events', 1);
-        $this->assertDatabaseCount('webhook_event_status_changes', 2);
+        $this->assertDatabaseCount('webhook_event_status_changes', 3);
         $this->assertSame($firstResponse->json('data.id'), $response->json('data.id'));
+        Queue::assertPushedTimes(ProcessWebhookEvent::class, 1);
     }
 
     public function test_rate_limit_returns_429_before_third_event_is_stored(): void
     {
         config(['syncops.webhooks.rate_limit_per_minute' => 2]);
         $connector = Connector::factory()->create(['slug' => 'billing-demo']);
+        Queue::fake([ProcessWebhookEvent::class]);
         $payload = '{"invoice_id":"invoice_demo_4012"}';
         $this->postWebhook($connector, $payload, 'billing-event-4012-a')->assertAccepted();
         $this->postWebhook($connector, $payload, 'billing-event-4012-b')->assertAccepted();
@@ -277,6 +294,7 @@ class WebhookControllerTest extends TestCase
 
         $response->assertTooManyRequests();
         $this->assertDatabaseCount('webhook_events', 2);
+        Queue::assertPushedTimes(ProcessWebhookEvent::class, 2);
     }
 
     private function postWebhook(
